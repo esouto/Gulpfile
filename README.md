@@ -18,4 +18,8 @@
 *gulp build-local --app shopflow*  :  build all for local development  
 *gulp index-local --app shopflow*  :  generate a new index_local.ssp inside /dist folder for uploda and work locally  
 *gulp customs --app shopflow*  :  compile all scripts inside /js folder to work locally  
-*gulp clean*  :  remove all inside /dist folder
+*gulp clean*  :  remove all inside /dist folder  
+
+####First command
+
+*gulp help*
