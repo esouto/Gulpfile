@@ -1,4 +1,5 @@
 /*
+* Copyright NetSuite, Inc. 2014 All rights reserved.
 * The following code is a demo prototype. Due to time constraints of a demo,
 * the code may contain bugs, may not accurately reflect user requirements
 * and may not be the best approach. Actual implementation should not reuse
@@ -7,7 +8,7 @@
 * @Author: Eduardo Souto
 * @Date:   2014-08-11 18:18:38
 * @Last Modified by:   Eduardo Souto
-* @Last Modified time: 2014-09-07 16:56:52
+* @Last Modified time: 2014-09-17 11:43:52
 */
 
 
@@ -35,7 +36,6 @@ var gulp = require('gulp'),
     size = require('gulp-size'),
     argv = require('yargs').argv, // gulp taskName --app shopflow
     es = require('event-stream'),
-    webserver = require('gulp-webserver'), // Web server
     browserSync = require('browser-sync'), // Browser Sync
     debug = require('gulp-debug'),
     rename = require('gulp-rename'), // Renames files
@@ -52,6 +52,7 @@ var gulp = require('gulp'),
     // imagemin = require('gulp-imagemin'),
     // revAppend = require('gulp-rev-append'), // ?rev=@@hash -> ?rev=5cadf43edba6a97980d42331f9fffd17
     // rjs = require('gulp-requirejs'), //npm install --save-dev gulp-requirejs
+    // data = require('gulp-data'), // npm install --save-dev gulp-data -- Generate a data object from a variety of sources: json, front-matter, databases, promises, anything... and set it to the file object for other plugins to consume
 
 
 var app = {
@@ -69,18 +70,18 @@ var app = {
     },
     shopflow: {
         folder: "ShopFlow",
-        url: "../Customs/ShopFlow",
-        localUrl: "http://localhost/local/ShopFlow"
+        url: "",
+        localUrl: "http://localhost:3000/local/ShopFlow"
     },
     checkout: {
         folder: "Checkout",
-        url: "../Customs/Checkout",
-        localUrl: "http://localhost/local/Checkout"
+        url: "",
+        localUrl: "http://localhost:3000/local/Checkout"
     },
     myaccount: {
         folder: "MyAccount",
-        url: "../Customs/MyAccount",
-        localUrl: "http://localhost/local/MyAccount"
+        url: "",
+        localUrl: "http://localhost:3000/local/MyAccount"
     },
     /**
      * changeEvent
@@ -109,15 +110,17 @@ var app = {
 gulp.task('sass', function() {
     "use strict";
 
-    var files = app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss';
+    var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss'];
 
     return gulp.src(files)
     .pipe(cache('sass')) // only pass through changed files
+    // sass --style compressed --sourcemap=auto --scss --trace [INPUT] [OUTPUT]
     .pipe(sass({
+        'sourcemap=auto': true,
         style: 'compressed',
+        scss: true,
         trace: true
     }).on('error', gutil.log))
-    .pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
     .pipe(remember('sass')) // add back all files to the stream
     .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
     .pipe(plumber({errorHandler: app.errorLog}));
@@ -130,14 +133,15 @@ gulp.task('sass', function() {
 gulp.task('less', function () {
     "use strict";
 
-    return gulp.src(app.paths.local + '/' + app[argv.app].folder + '/css/*.less')
+    var files = [app.paths.local + '/' + app[argv.app].folder + '/css/*.less'];
+
+    return gulp.src(files)
     .pipe(cache('less')) // only pass through changed files
     .pipe(sourcemaps.init())
     .pipe(less({
         compress: true,
         trace: true
     }).on('error', gutil.log))
-    .pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
     .pipe(sourcemaps.write('.')) // write source map
     .pipe(remember('less')) // add back all files to the stream
     .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
@@ -148,7 +152,6 @@ gulp.task('less', function () {
 /**
  * Styles
  */
-// gulp.task('styles', ["sass", "less"], function(cb) {
 gulp.task('styles', function(cb) {
     "use strict";
 
@@ -171,16 +174,14 @@ gulp.task('styles', function(cb) {
 
         gulp.src(files)
         // return gulp.src(app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.css')
-        .pipe(sourcemaps.init()) // init source map
+        .pipe(sourcemaps.init({loadMaps: true})) // init source map
+        .pipe(autoprefixer()) // autoprefix css
         .pipe(concat('styles.css'))
         .pipe(sourcemaps.write('.')) // write source map
         .pipe(size())
         .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder))
         .pipe(plumber({errorHandler: app.errorLog}))
-        .pipe(notify({onLast: true, message: 'Styles task complete'}))
-        // browser sync
-        .pipe(filter(app.paths.local + '/' + app[argv.app].folder + 'styles.css')) // Filtering stream to only styles.css file
-        .pipe(browserSync.reload({stream:true})); // reload the browser with the new styles.css
+        .pipe(notify({onLast: true, message: 'Styles task complete'}));
     });
 
     cb(); // finished task
@@ -198,23 +199,13 @@ gulp.task('clean', function () {
 });
 
 
-/**
- * Starts the webserver
- */
-gulp.task('webserver', function() {
-    "use strict";
-
-    gulp.src('./local/' + app[argv.app].folder)
-    .pipe(webserver({port: 3000,livereload: true, directoryListing: true}));
-});
-
-
 gulp.task('browser-sync', function () {
     "use strict";
 
     browserSync({
         open: false,
-        server: {baseDir: './'}
+        server: {baseDir: './'},
+        watchOptions: {debounceDelay: 1000}
     });
 });
 
@@ -222,7 +213,6 @@ gulp.task('browser-sync', function () {
 /**
  * Scripts ########################################################
  */
-
 
 gulp.task('scripts', function(cb) {
     "use strict";
@@ -278,7 +268,7 @@ function sc_templates() {
     "use strict";
 
     return map(function(file, cb) {
-        file.contents = new Buffer('SC.gennTemplates[\'' + app.paths.basename(file) + '\'] = (' + file.contents.toString() + ');');
+        file.contents = new Buffer('SC.customTemplates[\'' + app.paths.basename(file) + '\'] = (' + file.contents.toString() + ');');
         cb(null, file);
     });
 }
@@ -352,7 +342,6 @@ gulp.task('templates', function (cb) {
 
 /**
  * Generates index to work locally
- * write the index.ssp that will have the same code that after I will insert into index_cus.ssp
  */
 gulp.task('index-local', function () {
     "use strict";
@@ -416,9 +405,12 @@ gulp.task('watch-sass', function () {
     "use strict";
 
     // var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.+(scss|less)'];
-    var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss'];
+    var files = [
+            app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss',
+            app.paths.local + '/' + app[argv.app].folder + '/css/combiner.config'
+        ];
 
-    var watcher = gulp.watch(files, ['sass']);
+    var watcher = gulp.watch(files, ['sass', browserSync.reload]);
     watcher.on('change', function (event) {
         app.changeEvent(event);
         if (event.type === 'deleted') { // if a file is deleted, forget about it
@@ -431,9 +423,12 @@ gulp.task('watch-sass', function () {
 gulp.task('watch-less', function () {
     "use strict";
 
-    var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.less'];
+    var files = [
+            app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.less',
+            app.paths.local + '/' + app[argv.app].folder + '/css/combiner.config'
+        ];
 
-    var watcher = gulp.watch(files, ['less']);
+    var watcher = gulp.watch(files, ['less', browserSync.reload]);
     watcher.on('change', function (event) {
         app.changeEvent(event);
         if (event.type === 'deleted') { // if a file is deleted, forget about it
@@ -449,7 +444,7 @@ gulp.task('watch-styles', function () {
     // var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.+(scss|less)'];
     var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.css'];
 
-    var watcher = gulp.watch(files, ['styles']);
+    var watcher = gulp.watch(files, ['styles', browserSync.reload]);
     watcher.on('change', function (event) {
         app.changeEvent(event);
     });
@@ -460,6 +455,7 @@ gulp.task('watch-js', function () {
 
     var files = [
             app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.js + '.js',
+            app.paths.local + '/' + app[argv.app].folder + '/js/combiner.config',
             '!' + app.paths.local + '/' + app[argv.app].folder + '/js/Application.js'
         ];
 
@@ -472,7 +468,11 @@ gulp.task('watch-js', function () {
 gulp.task('watch-templates', function () {
     "use strict";
 
-    var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.templates + '.txt'];
+    var files = [
+            app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.templates + '.txt',
+            app.paths.local + '/' + app[argv.app].folder + '/templates/combiner.config',
+            app.paths.local + '/' + app[argv.app].folder + '/templates/manifest.txt'
+        ];
 
     var watcher = gulp.watch(files, ['templates', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -519,24 +519,48 @@ gulp.task('watch', ["watch-sass", "watch-less", "watch-styles", "watch-js", "wat
 gulp.task('build-index', function () {
     "use strict";
 
-    return gulp.src('app/' + app[argv.app].folder + '/index.ssp')
+    var files = ['app/' + app[argv.app].folder + '/index.ssp'];
+
+    return gulp.src(files)
     .pipe(mustache({app_url: app[argv.app].url}))
     .pipe(rename("index_cus.ssp"))
     .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
-gulp.task('build-styles', function () {
+gulp.task('build-siteImg', function () {
+    "use strict";
 
-    // styles
-    return gulp.src(app.paths.local + '/' + app[argv.app].folder + "/styles.css")
-    .pipe(replace('http://localhost', app[argv.app].url))
+    var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/siteImg/**/*'];
+
+    return gulp.src(filesToCopy)
+    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/siteImg'));
+});
+
+gulp.task('build-siteFonts', function () {
+    "use strict";
+
+    var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/fonts/**/*'];
+
+    return gulp.src(filesToCopy)
+    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/fonts'));
+});
+
+gulp.task('build-styles', function () {
+    "use strict";
+
+    var files = [app.paths.local + '/' + app[argv.app].folder + "/styles.css"];
+
+    return gulp.src(files)
+    // .pipe(replace(app[argv.app].localUrl, app[argv.app].url))
     .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 gulp.task('build-customs', function () {
+    "use strict";
 
-    // application
-    return gulp.src(app.paths.local + '/' + app[argv.app].folder + "/customs.js")
+    var files = [app.paths.local + '/' + app[argv.app].folder + "/customs.js"];
+
+    return gulp.src(files)
     .pipe(uglify({mangle: false}))
     .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
@@ -544,9 +568,14 @@ gulp.task('build-customs', function () {
 gulp.task('build-revision', function () {
     "use strict";
 
-    // revision all
-    return gulp.src(app.paths.dist + '/' + app[argv.app].folder + '/*')
-    .pipe(revAll({ ignore: ['.ssp', '.json'], separator: '-' }))
+    var files = [app.paths.dist + '/' + app[argv.app].folder + '/*'],
+        ignoreList = ['.ssp', '.json', '.png', '.jpg', '.gif'];
+
+    return gulp.src(files)
+    .pipe(revAll({
+        ignore: ignoreList,
+        separator: '-'
+    }))
     .pipe(revReplace({ replaceInExtensions: ['.ssp'] }))
     .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
@@ -559,15 +588,28 @@ gulp.task('build-deleteNonRevisionedFiles', function () {
         app.paths.dist + '/' + app[argv.app].folder + '/customs.js'
     ];
 
-    // delete non revisioned files
     return gulp.src(files, { read: false })
     .pipe(rimraf());
+});
+
+gulp.task('build-languages', function () {
+    "use strict";
+
+    var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/languages/**/*'];
+
+    return gulp.src(filesToCopy)
+    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/languages_cus'));
 });
 
 gulp.task('build-zipDist', function () {
     "use strict";
 
-    return gulp.src(app.paths.dist + '/' + app[argv.app].folder + '**/*')
+    var files = [
+            app.paths.dist + '/' + app[argv.app].folder + '/**/*'
+            // '!' + app.paths.dist + '/' + app[argv.app].folder + '/**/*.ssp'
+        ];
+
+    return gulp.src(files)
     .pipe(zip('build-' + app[argv.app].folder + '.zip'))
     .pipe(gulp.dest(app.paths.dist + '/'));
 });
@@ -578,10 +620,25 @@ gulp.task('build-dist', function () {
     runSequence(
         "clean",
         "build-index",
-        "build-styles",
-        "build-customs",
+        ["build-styles","build-customs"],
         "build-revision",
         "build-deleteNonRevisionedFiles",
+        "build-languages",
+        "build-zipDist"
+    );
+});
+
+gulp.task('build-dist-all', function () {
+    "use strict";
+
+    runSequence(
+        "clean",
+        "build-index",
+        ["build-styles","build-customs"],
+        "build-revision",
+        "build-deleteNonRevisionedFiles",
+        ["build-siteImg", "build-siteFonts"],
+        "build-languages",
         "build-zipDist"
     );
 });
@@ -593,21 +650,22 @@ gulp.task('build-dist', function () {
 gulp.task('help', function () {
     "use strict";
     console.log("\r");
-    console.log("Available Tasks");
+    console.log(gutil.colors.cyan("Available Tasks"));
     console.log("\r");
-    console.log("gulp sass --app shopflow  :  compile all .scss files inside --app option-folder inside /css, available options [shopflow, checkout, myaccount]");
-    console.log("gulp less --app shopflow  :  compile all .less as above");
-    console.log("gulp styles --app shopflow  :  run sass & less tasks and concatenate all files into /local/styles.css");
-    console.log("gulp webserver  :  open a web-server under localhost:8080 that will auto reload all changes");
-    console.log("gulp browser-sync --app shopflow  :  open a web-server under localhost:3000 with browser sync services");
-    console.log("gulp scripts --app shopflow  :  compile all scripts inside /js folder based on combiner.config");
-    console.log("gulp templates --app shopflow  :  compile all templates inside /templates folder based on combiner.config");
-    console.log("gulp watch --app shopflow  :  watch all [styles, scripts, templates]");
-    console.log("gulp build-dist --app shopflow  :  build all the necesary files for distribution inside /dist");
-    console.log("gulp build-local --app shopflow  :  build all for local development");
-    console.log("gulp index-local --app shopflow  :  generate a new index_local.ssp inside /dist folder for uploda and work locally");
-    console.log("gulp customs --app shopflow  :  compile all scripts inside /js folder to work locally");
-    console.log("gulp clean  :  remove all inside /dist folder");
+    console.log(gutil.colors.cyan("gulp index-local --app shopflow") + "  :  generate a new index_local.ssp inside /dist folder for upload and work locally");
+    console.log(gutil.colors.cyan("gulp sass --app shopflow") + "  :  compile all .scss files inside --app option-folder inside /css, available options [shopflow, checkout, myaccount]");
+    console.log(gutil.colors.cyan("gulp less --app shopflow") + "  :  compile all .less as above");
+    console.log(gutil.colors.cyan("gulp styles --app shopflow") + "  :  concatenate all files into /local/styles.css based on combiner.config");
+    console.log(gutil.colors.cyan("gulp browser-sync") + "  :  open a web-server under localhost:3000 that point to ./");
+    console.log(gutil.colors.cyan("gulp scripts --app shopflow") + "  :  compile all scripts inside /js folder based on combiner.config");
+    console.log(gutil.colors.cyan("gulp templates --app shopflow") + "  :  compile all templates inside /templates folder based on combiner.config");
+    console.log(gutil.colors.cyan("gulp customs --app shopflow") + "  :  compile all scripts inside /js folder to work locally");
+    console.log(gutil.colors.cyan("gulp watch --app shopflow") + "  :  watch all [styles, scripts, templates]");
+    console.log(gutil.colors.cyan("gulp build-local --app shopflow") + "  :  build all for local development");
+    console.log(gutil.colors.cyan("gulp build-dist --app shopflow") + "  :  build all the necessary files for distribution inside /dist, except /siteImg");
+    console.log(gutil.colors.cyan("gulp build-dist-all --app shopflow") + "  :  build all the necessary files for distribution inside /dist including /siteImg");
+    console.log(gutil.colors.cyan("gulp clean") + "  :  remove all inside /dist folder");
+    console.log("\r");
 });
 
 
