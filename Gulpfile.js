@@ -1,10 +1,4 @@
 /*
- * Copyright NetSuite, Inc. 2014 All rights reserved.
- * The following code is a demo prototype. Due to time constraints of a demo,
- * the code may contain bugs, may not accurately reflect user requirements
- * and may not be the best approach. Actual implementation should not reuse
- * this code without due verification.
- *
  * @Author: Eduardo Souto
  * @Date:   2014-08-11 18:18:38
  * @Last Modified by:   Eduardo Souto
