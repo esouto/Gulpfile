@@ -1,9 +1,15 @@
 /*
-* @Author: Eduardo Souto
-* @Date:   2014-08-11 18:18:38
-* @Last Modified by:   Eduardo Souto
-* @Last Modified time: 2014-09-17 11:43:52
-*/
+ * Copyright NetSuite, Inc. 2014 All rights reserved.
+ * The following code is a demo prototype. Due to time constraints of a demo,
+ * the code may contain bugs, may not accurately reflect user requirements
+ * and may not be the best approach. Actual implementation should not reuse
+ * this code without due verification.
+ *
+ * @Author: Eduardo Souto
+ * @Date:   2014-08-11 18:18:38
+ * @Last Modified by:   Eduardo Souto
+ * @Last Modified time: 2014-09-17 11:43:52
+ */
 
 
 var gulp = require('gulp'),
@@ -37,16 +43,16 @@ var gulp = require('gulp'),
     cache = require('gulp-cached'),
     remember = require('gulp-remember'); // Filter files in a vinyl stream
 
-    // plugins = require("gulp-load-plugins")({
-    //     pattern: ['gulp-*', 'gulp.*'],
-    //     replaceString: /\bgulp[\-.]/
-    // });
+// plugins = require("gulp-load-plugins")({
+//     pattern: ['gulp-*', 'gulp.*'],
+//     replaceString: /\bgulp[\-.]/
+// });
 
-    // spritesmith = require('gulp.spritesmith'); // Convert a set of images into a spritesheet and CSS variables
-    // imagemin = require('gulp-imagemin'),
-    // revAppend = require('gulp-rev-append'), // ?rev=@@hash -> ?rev=5cadf43edba6a97980d42331f9fffd17
-    // rjs = require('gulp-requirejs'), //npm install --save-dev gulp-requirejs
-    // data = require('gulp-data'), // npm install --save-dev gulp-data -- Generate a data object from a variety of sources: json, front-matter, databases, promises, anything... and set it to the file object for other plugins to consume
+// spritesmith = require('gulp.spritesmith'); // Convert a set of images into a spritesheet and CSS variables
+// imagemin = require('gulp-imagemin'),
+// revAppend = require('gulp-rev-append'), // ?rev=@@hash -> ?rev=5cadf43edba6a97980d42331f9fffd17
+// rjs = require('gulp-requirejs'), //npm install --save-dev gulp-requirejs
+// data = require('gulp-data'), // npm install --save-dev gulp-data -- Generate a data object from a variety of sources: json, front-matter, databases, promises, anything... and set it to the file object for other plugins to consume
 
 
 var app = {
@@ -107,17 +113,17 @@ gulp.task('sass', function() {
     var files = [app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss'];
 
     return gulp.src(files)
-    .pipe(cache('sass')) // only pass through changed files
-    // sass --style compressed --sourcemap=auto --scss --trace [INPUT] [OUTPUT]
-    .pipe(sass({
-        'sourcemap=auto': true,
-        style: 'compressed',
-        scss: true,
-        trace: true
-    }).on('error', gutil.log))
-    .pipe(remember('sass')) // add back all files to the stream
-    .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
-    .pipe(plumber({errorHandler: app.errorLog}));
+        .pipe(cache('sass')) // only pass through changed files
+        // sass --style compressed --sourcemap=auto --scss --trace [INPUT] [OUTPUT]
+        .pipe(sass({
+            'sourcemap=auto': true,
+            style: 'compressed',
+            scss: true,
+            trace: true
+        }).on('error', gutil.log))
+        .pipe(remember('sass')) // add back all files to the stream
+        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
+        .pipe(plumber({errorHandler: app.errorLog}));
     // .on('error', app.errorLog);
 });
 
@@ -130,16 +136,16 @@ gulp.task('less', function () {
     var files = [app.paths.local + '/' + app[argv.app].folder + '/css/*.less'];
 
     return gulp.src(files)
-    .pipe(cache('less')) // only pass through changed files
-    .pipe(sourcemaps.init())
-    .pipe(less({
-        compress: true,
-        trace: true
-    }).on('error', gutil.log))
-    .pipe(sourcemaps.write('.')) // write source map
-    .pipe(remember('less')) // add back all files to the stream
-    .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
-    .pipe(plumber({errorHandler: app.errorLog}));
+        .pipe(cache('less')) // only pass through changed files
+        .pipe(sourcemaps.init())
+        .pipe(less({
+            compress: true,
+            trace: true
+        }).on('error', gutil.log))
+        .pipe(sourcemaps.write('.')) // write source map
+        .pipe(remember('less')) // add back all files to the stream
+        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/css'))
+        .pipe(plumber({errorHandler: app.errorLog}));
 });
 
 
@@ -152,47 +158,51 @@ gulp.task('styles', function(cb) {
     var files = "";
 
     fs.createReadStream(app.paths.local + '/' + app[argv.app].folder + '/css/combiner.config')
-    .pipe(es.split())
-    .pipe(es.mapSync(function (data) {
-        return data.split(':');
-    }))
-    .pipe(es.mapSync(function (data) {
-        if (data[0] === 'Input-files') {
-            files = data[1].trim().split(' ');
-        }
-    }))
-    .on('end', function () {
-        for(var i = 0; i < files.length; i++){
-            files[i] = app.paths.local + '/' + app[argv.app].folder + '/css/' + files[i];
-        }
+        .pipe(es.split())
+        .pipe(es.mapSync(function (data) {
+            return data.split(':');
+        }))
+        .pipe(es.mapSync(function (data) {
+            if (data[0] === 'Input-files') {
+                files = data[1].trim().split(' ');
+            }
+        }))
+        .on('end', function () {
+            for(var i = 0; i < files.length; i++){
+                files[i] = app.paths.local + '/' + app[argv.app].folder + '/css/' + files[i];
+            }
 
-        gulp.src(files)
-        // return gulp.src(app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.css')
-        .pipe(sourcemaps.init({loadMaps: true})) // init source map
-        .pipe(autoprefixer()) // autoprefix css
-        .pipe(concat('styles.css'))
-        .pipe(sourcemaps.write('.')) // write source map
-        .pipe(size())
-        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder))
-        .pipe(plumber({errorHandler: app.errorLog}))
-        .pipe(notify({onLast: true, message: 'Styles task complete'}));
-    });
+            gulp.src(files)
+                // return gulp.src(app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.css')
+                .pipe(sourcemaps.init({loadMaps: true})) // init source map
+                .pipe(autoprefixer()) // autoprefix css
+                .pipe(concat('styles.css'))
+                .pipe(sourcemaps.write('.')) // write source map
+                .pipe(size())
+                .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder))
+                .pipe(plumber({errorHandler: app.errorLog}))
+                .pipe(notify({onLast: true, message: 'Styles task complete'}));
+        });
 
     cb(); // finished task
 });
 
 
-//Cleans dist directory
+/**
+ * Cleans dist directory
+ */
 gulp.task('clean', function () {
     "use strict";
 
     var files = app.paths.dist + '/*';
 
     return gulp.src(files, {read: false})
-    .pipe(rimraf());
+        .pipe(rimraf());
 });
 
-
+/**
+ * Browser Sync
+ */
 gulp.task('browser-sync', function () {
     "use strict";
 
@@ -214,25 +224,27 @@ gulp.task('scripts', function(cb) {
     var files = "";
 
     fs.createReadStream(app.paths.local + '/' + app[argv.app].folder + '/js/combiner.config')
-    .pipe(es.split())
-    .pipe(es.mapSync(function (data) {
-        return data.split(':');
-    }))
-    .pipe(es.mapSync(function (data) {
-        if (data[0] === 'Input-files') {
-            files = data[1].trim().split(' ');
-        }
-    }))
-    .on('end', function () {
-        for(var i = 0; i < files.length; i++){
-            files[i] = app.paths.local + '/' + app[argv.app].folder + '/js/' + files[i];
-        }
+        .pipe(es.split())
+        .pipe(es.mapSync(function (data) {
+            return data.split(':');
+        }))
+        .pipe(es.mapSync(function (data) {
+            if (data[0] === 'Input-files') {
+                files = data[1].trim().split(' ');
+            }
+        }))
+        .on('end', function () {
+            for(var i = 0; i < files.length; i++){
+                files[i] = app.paths.local + '/' + app[argv.app].folder + '/js/' + files[i];
+            }
 
-        gulp.src(files)
-        .pipe(concat('Application.js'))
-        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/js'))
-        .pipe(size());
-    });
+            gulp.src(files)
+                .pipe(sourcemaps.init()) // init source map
+                .pipe(concat('Application.js'))
+                .pipe(sourcemaps.write('.')) // write source map
+                .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/js'))
+                .pipe(size());
+        });
 
     cb(); // finished task
 });
@@ -271,13 +283,13 @@ gulp.task('templates2', function () {
     "use strict";
 
     return gulp.src(app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.templates + '.txt')
-    .pipe(cache('templates')) // only pass through changed files
-    .pipe(jst())
-    .pipe(remember('templates')) // add back all files to the stream
-    .pipe(sc_templates())
-    .pipe(concat('Templates.js'))
-    .pipe(size())
-    .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/templates'));
+        .pipe(cache('templates')) // only pass through changed files
+        .pipe(jst())
+        .pipe(remember('templates')) // add back all files to the stream
+        .pipe(sc_templates())
+        .pipe(concat('Templates.js'))
+        .pipe(size())
+        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder + '/templates'));
 });
 
 
@@ -294,41 +306,41 @@ gulp.task('templates', function (cb) {
         };
 
     fs.createReadStream(app.paths.local + '/' + app[argv.app].folder + '/templates/combiner.config')
-    .pipe(es.split())
-    .pipe(es.mapSync(function (data) {
-        return data.split(':');
-    }))
-    .pipe(es.mapSync(function (data) {
-        if (data[0] === 'Variable-name') {
-            varname = data[1].trim();
-        }
-    }))
-    .on('end', function () {
-        fs.createReadStream(app.paths.local + '/' + app[argv.app].folder + '/templates/manifest.txt')
         .pipe(es.split())
         .pipe(es.mapSync(function (data) {
-            return data.split(' ');
+            return data.split(':');
         }))
         .pipe(es.mapSync(function (data) {
-            if (data[1] !== undefined) {
-                var fileContent = "";
-                if (data[1].indexOf('metataghtml="macro"') !== -1) {
-                    fileContent = fs.readFileSync(app.paths.local + '/' + app[argv.app].folder + '/templates/' + data[0].trim()).toString('utf8');
-                    objResult.macros.push(fileContent);
-                }
-                if (data[1].indexOf('tmpl') !== -1) {
-                    var tmplName = data[1].split('=');
-                    fileContent = fs.readFileSync(app.paths.local + '/' + app[argv.app].folder + '/templates/' + data[0].trim()).toString('utf8');
-                    objResult[tmplName[1].replace(/"/g, "")] = fileContent;
-                }
+            if (data[0] === 'Variable-name') {
+                varname = data[1].trim();
             }
         }))
         .on('end', function () {
-            var buffer = "";
-            buffer = varname + ' = ' + JSON.stringify(objResult, null, 4) + ';';
-            fs.writeFile(app.paths.local + '/' + app[argv.app].folder + '/templates/Templates.js', buffer);
+            fs.createReadStream(app.paths.local + '/' + app[argv.app].folder + '/templates/manifest.txt')
+                .pipe(es.split())
+                .pipe(es.mapSync(function (data) {
+                    return data.split(' ');
+                }))
+                .pipe(es.mapSync(function (data) {
+                    if (data[1] !== undefined) {
+                        var fileContent = "";
+                        if (data[1].indexOf('metataghtml="macro"') !== -1) {
+                            fileContent = fs.readFileSync(app.paths.local + '/' + app[argv.app].folder + '/templates/' + data[0].trim()).toString('utf8');
+                            objResult.macros.push(fileContent);
+                        }
+                        if (data[1].indexOf('tmpl') !== -1) {
+                            var tmplName = data[1].split('=');
+                            fileContent = fs.readFileSync(app.paths.local + '/' + app[argv.app].folder + '/templates/' + data[0].trim()).toString('utf8');
+                            objResult[tmplName[1].replace(/"/g, "")] = fileContent;
+                        }
+                    }
+                }))
+                .on('end', function () {
+                    var buffer = "";
+                    buffer = varname + ' = ' + JSON.stringify(objResult, null, 4) + ';';
+                    fs.writeFile(app.paths.local + '/' + app[argv.app].folder + '/templates/Templates.js', buffer);
+                });
         });
-    });
 
     cb(); // finished task
 });
@@ -341,9 +353,9 @@ gulp.task('index-local', function () {
     "use strict";
 
     return gulp.src('app/' + app[argv.app].folder + '/index.ssp')
-    .pipe(mustache({app_url: app[argv.app].localUrl}))
-    .pipe(rename("index_local.ssp"))
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
+        .pipe(mustache({app_url: app[argv.app].localUrl}))
+        .pipe(rename("index_local.ssp"))
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 /**
@@ -363,21 +375,23 @@ gulp.task('index-local', function () {
 /**
  * Generate the customs.js
  */
-// gulp.task('customs', ['templates', 'scripts'], function() {
+    // gulp.task('customs', ['templates', 'scripts'], function() {
 gulp.task('customs', function() {
     "use strict";
 
     var files = [
             app.paths.local + '/' + app[argv.app].folder + '/templates/Templates.js',
             app.paths.local + '/' + app[argv.app].folder + '/js/Application.js'
-        ];
+    ];
 
     return gulp.src(files)
-    .pipe(concat('customs.js'))
-    .pipe(size())
-    .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder))
-    .pipe(plumber({errorHandler: app.errorLog}))
-    .pipe(notify({onLast: true, message: 'Customs task complete'}));
+        .pipe(sourcemaps.init({loadMaps: true})) // init source map
+        .pipe(concat('customs.js'))
+        .pipe(sourcemaps.write('.')) // write source map
+        .pipe(size())
+        .pipe(gulp.dest(app.paths.local + '/' + app[argv.app].folder))
+        .pipe(plumber({errorHandler: app.errorLog}))
+        .pipe(notify({onLast: true, message: 'Customs task complete'}));
 });
 
 
@@ -402,7 +416,7 @@ gulp.task('watch-sass', function () {
     var files = [
             app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.scss',
             app.paths.local + '/' + app[argv.app].folder + '/css/combiner.config'
-        ];
+    ];
 
     var watcher = gulp.watch(files, ['sass', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -420,7 +434,7 @@ gulp.task('watch-less', function () {
     var files = [
             app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.css + '.less',
             app.paths.local + '/' + app[argv.app].folder + '/css/combiner.config'
-        ];
+    ];
 
     var watcher = gulp.watch(files, ['less', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -451,7 +465,7 @@ gulp.task('watch-js', function () {
             app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.js + '.js',
             app.paths.local + '/' + app[argv.app].folder + '/js/combiner.config',
             '!' + app.paths.local + '/' + app[argv.app].folder + '/js/Application.js'
-        ];
+    ];
 
     var watcher = gulp.watch(files, ['scripts', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -466,7 +480,7 @@ gulp.task('watch-templates', function () {
             app.paths.local + '/' + app[argv.app].folder + '/' + app.paths.templates + '.txt',
             app.paths.local + '/' + app[argv.app].folder + '/templates/combiner.config',
             app.paths.local + '/' + app[argv.app].folder + '/templates/manifest.txt'
-        ];
+    ];
 
     var watcher = gulp.watch(files, ['templates', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -481,12 +495,12 @@ gulp.task('watch-templates', function () {
 // gulp.task('watch-imgs', function () {
 //     "use strict";
 
-    // var files = app.paths.local + '/' + app.paths.images;
+// var files = app.paths.local + '/' + app.paths.images;
 
-    // var watcher = gulp.watch(files, ['images']);
-    // watcher.on('change', function (event) {
-    //     app.changeEvent(event);
-    // });
+// var watcher = gulp.watch(files, ['images']);
+// watcher.on('change', function (event) {
+//     app.changeEvent(event);
+// });
 // });
 
 gulp.task('watch-customs', function () {
@@ -495,7 +509,7 @@ gulp.task('watch-customs', function () {
     var files = [
             app.paths.local + '/' + app[argv.app].folder + '/templates/Templates.js',
             app.paths.local + '/' + app[argv.app].folder + '/js/Application.js'
-        ];
+    ];
 
     var watcher = gulp.watch(files, ['customs', browserSync.reload]);
     watcher.on('change', function (event) {
@@ -516,9 +530,9 @@ gulp.task('build-index', function () {
     var files = ['app/' + app[argv.app].folder + '/index.ssp'];
 
     return gulp.src(files)
-    .pipe(mustache({app_url: app[argv.app].url}))
-    .pipe(rename("index_cus.ssp"))
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
+        .pipe(mustache({app_url: app[argv.app].url}))
+        .pipe(rename("index_cus.ssp"))
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 gulp.task('build-siteImg', function () {
@@ -527,7 +541,7 @@ gulp.task('build-siteImg', function () {
     var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/siteImg/**/*'];
 
     return gulp.src(filesToCopy)
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/siteImg'));
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/siteImg'));
 });
 
 gulp.task('build-siteFonts', function () {
@@ -536,7 +550,7 @@ gulp.task('build-siteFonts', function () {
     var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/fonts/**/*'];
 
     return gulp.src(filesToCopy)
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/fonts'));
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/fonts'));
 });
 
 gulp.task('build-styles', function () {
@@ -545,8 +559,8 @@ gulp.task('build-styles', function () {
     var files = [app.paths.local + '/' + app[argv.app].folder + "/styles.css"];
 
     return gulp.src(files)
-    // .pipe(replace(app[argv.app].localUrl, app[argv.app].url))
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
+        // .pipe(replace(app[argv.app].localUrl, app[argv.app].url))
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 gulp.task('build-customs', function () {
@@ -555,8 +569,8 @@ gulp.task('build-customs', function () {
     var files = [app.paths.local + '/' + app[argv.app].folder + "/customs.js"];
 
     return gulp.src(files)
-    .pipe(uglify({mangle: false}))
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
+        .pipe(uglify({mangle: false}))
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 gulp.task('build-revision', function () {
@@ -566,24 +580,24 @@ gulp.task('build-revision', function () {
         ignoreList = ['.ssp', '.json', '.png', '.jpg', '.gif'];
 
     return gulp.src(files)
-    .pipe(revAll({
-        ignore: ignoreList,
-        separator: '-'
-    }))
-    .pipe(revReplace({ replaceInExtensions: ['.ssp'] }))
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
+        .pipe(revAll({
+            ignore: ignoreList,
+            separator: '-'
+        }))
+        .pipe(revReplace({ replaceInExtensions: ['.ssp'] }))
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder));
 });
 
 gulp.task('build-deleteNonRevisionedFiles', function () {
     "use strict";
 
     var files = [
-        app.paths.dist + '/' + app[argv.app].folder + '/styles.css',
-        app.paths.dist + '/' + app[argv.app].folder + '/customs.js'
+            app.paths.dist + '/' + app[argv.app].folder + '/styles.css',
+            app.paths.dist + '/' + app[argv.app].folder + '/customs.js'
     ];
 
     return gulp.src(files, { read: false })
-    .pipe(rimraf());
+        .pipe(rimraf());
 });
 
 gulp.task('build-languages', function () {
@@ -592,7 +606,7 @@ gulp.task('build-languages', function () {
     var filesToCopy = [app.paths.local + '/' + app[argv.app].folder + '/languages/**/*'];
 
     return gulp.src(filesToCopy)
-    .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/languages_cus'));
+        .pipe(gulp.dest(app.paths.dist + '/' + app[argv.app].folder + '/languages_cus'));
 });
 
 gulp.task('build-zipDist', function () {
@@ -600,12 +614,12 @@ gulp.task('build-zipDist', function () {
 
     var files = [
             app.paths.dist + '/' + app[argv.app].folder + '/**/*'
-            // '!' + app.paths.dist + '/' + app[argv.app].folder + '/**/*.ssp'
-        ];
+        // '!' + app.paths.dist + '/' + app[argv.app].folder + '/**/*.ssp'
+    ];
 
     return gulp.src(files)
-    .pipe(zip('build-' + app[argv.app].folder + '.zip'))
-    .pipe(gulp.dest(app.paths.dist + '/'));
+        .pipe(zip('build-' + app[argv.app].folder + '.zip'))
+        .pipe(gulp.dest(app.paths.dist + '/'));
 });
 
 gulp.task('build-dist', function () {
